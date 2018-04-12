@@ -16,7 +16,7 @@ describe('Timer', () => {
     timer.then().catch(() => {});
 
     timer.stop();
-    Timer.stop();
+    Timer.stopPolling();
   });
 
   describe('Promises', () => {

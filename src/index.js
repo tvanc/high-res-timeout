@@ -16,16 +16,26 @@ export default class Timer extends EventEmitter {
   // @formatter:on
 
   /**
+   * All instances HighResTimeout
    * @type {Set<Timer>}
    * @private
    */
   static _instances = new Set();
 
   /**
+   * Starts a requestAnimationFrame() loop which polls the registry for completed timeouts.
+   * Completed timeouts resolve their promises and emit a 'complete' event.
+   *
+   * Calling this twice will have no effect.
+   *
    * @returns {Timer}
    * @private
    */
-  static start () {
+  static startPolling () {
+    if (this._nextFrameId) {
+      return this;
+    }
+
     const poll = (timestamp) => {
       this._instances.forEach((instance) => {
         instance._tick(timestamp);
@@ -51,10 +61,10 @@ export default class Timer extends EventEmitter {
   }
 
   /**
-   * Calling stop statically stops all timers.
+   * Stop the requestAnimationFrame() loop.
    * @returns {Timer}
    */
-  static stop () {
+  static stopPolling () {
     cancelAnimationFrame(this._nextFrameId);
     this._nextFrameId = undefined;
 
@@ -72,13 +82,16 @@ export default class Timer extends EventEmitter {
     this._instances.delete(timer);
 
     if (!this._instances.size) {
-      this.stop();
+      this.stopPolling();
     }
 
     return this;
   }
 
   /**
+   * Adds a instance to the registry that is checked in each iteration of the
+   * requestAnimationFrame() loop.
+   *
    * @param timer
    * @returns {Timer}
    * @private
@@ -113,12 +126,17 @@ export default class Timer extends EventEmitter {
 
   /**
    * @returns {number}
-   * A float between 0 and 1
+   * A float between 0 and 1 indicating how much of the total time has elapsed between when
+   * start() was called and when this instance will fulfill.
    */
   get progress () {
     return Math.min((performanceDotNow() - this._startTime) / this._duration, 1);
   }
 
+  /**
+   * Read-only property for checking whether this HighResTimeout instance is currently running.
+   * @returns {boolean}
+   */
   get running () {
     return this._running;
   }
@@ -146,13 +164,19 @@ export default class Timer extends EventEmitter {
     });
   }
 
+  /**
+   * Treat instances of HighResTimeout like a Promise.
+   * @param args
+   * @returns {Promise}
+   */
   then (...args) {
-    // eslint-disable-next-line prefer-spread
     return this._promise.then.apply(this._promise, args);
   }
 
   /**
-   * Trigger the timer ahead of time, or at any time for that matter.
+   * Trigger the timer ahead of time, or at any time for that matter. Calling this will
+   * fulfill the promise, so any handlers attached via then() will be triggered.
+   *
    * @returns {Timer}
    */
   complete () {
@@ -164,6 +188,21 @@ export default class Timer extends EventEmitter {
     return this;
   }
 
+  /**
+   * Pause this timeout. Calling this method will cause the underlying Promise to be
+   * rejected, causing any rejection handlers to be triggered. If this is undesirable, use the
+   * `complete` and `stop` events instead of the Promise model.
+   *
+   * Subsequent calls to start() will use the time remaining to completion. For example, if you
+   * create an instance of HighResTimeout with a duration of 100ms, call start(), and then
+   * after 75ms call stop(), there will be a delay of 25ms instead of 100ms after the next call to
+   * start(). If the instance is set to repeat, subsequent cycles will use the original duration of
+   * 100ms.
+   *
+   * To also reset the timeout, call stop() and then call reset()
+   * <code>timeout.stop().reset();</code>
+   * @returns {Timer}
+   */
   stop () {
     if (!this._running) {
       return this;
@@ -181,6 +220,10 @@ export default class Timer extends EventEmitter {
     return this;
   }
 
+  /**
+   * Start this timeout. Calling this method will result in the `start` event being triggered.
+   * @returns {Timer}
+   */
   start () {
     if (this._running) {
       return this;
@@ -193,13 +236,19 @@ export default class Timer extends EventEmitter {
 
     this._running = true;
 
-    this.constructor.start();
+    this.constructor.startPolling();
 
     this.emit(this.constructor.EVENT_START);
 
     return this;
   }
 
+  /**
+   * Reset the timeout. If the timeout is running, which is to say the timeout has been
+   * started and has not completed or been stopped, then the timeout will continue running.
+   * If the timeout is not currently running, the timeout will continue to not be running.
+   * @returns {Timer}
+   */
   reset () {
     const timestamp = performanceDotNow();
 
@@ -215,6 +264,13 @@ export default class Timer extends EventEmitter {
     return this;
   }
 
+  /**
+   * Triggers the tick event. This indicates that a cycle of the requestAnimationFrame() loop
+   * is about to complete. Note that, as long as the timeout completes organically
+   * (as in, by waiting and not manually calling complete()), the `tick` event will always fire
+   * before `complete`.
+   * @private
+   */
   _tick () {
     this.emit(this.constructor.EVENT_TICK);
   }

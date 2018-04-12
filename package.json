@@ -1,7 +1,7 @@
 {
   "name": "timer",
   "version": "1.0.0",
-  "description": "A high-resolution timing tool that lets you start, stop, reset, increase, and decrease. Good for animations, long-press timers, carousels, you name it.",
+  "description": "A high-res, advanced replacement for setTimeout() and setInterval(). Good for animations, long-press timers, carousels, you name it.",
   "main": "dist/index.js",
   "watch": {
     "cover": [
@@ -30,6 +30,8 @@
     "javascript",
     "timer",
     "setTimeout",
+    "setInterval",
+    "",
     "performance.now",
     "DOMHighResTimeStamp",
     "requestAnimationFrame"
