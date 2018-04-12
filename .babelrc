@@ -1,0 +1,25 @@
+{
+  "env": {
+    "development": {
+      "presets": [
+        "env"
+      ],
+      "plugins": [
+        "add-module-exports",
+        "transform-class-properties",
+        "transform-decorators-legacy"
+      ]
+    },
+    "production": {
+      "presets": [
+        "env",
+        "minify"
+      ],
+      "plugins": [
+        "add-module-exports",
+        "transform-class-properties",
+        "transform-decorators-legacy"
+      ]
+    }
+  }
+}
