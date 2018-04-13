@@ -171,7 +171,7 @@ describe('HighResTimeout', () => {
         // Halfway through the expected time, change `duration`
         setTimeout(() => {testInstance.duration = HALF_DURATION;}, HALF_DURATION);
 
-        // Check that timer completed before the original `duration` of SAFE_DURATION elapsed
+        // Check that timeout completed before the original `duration` of SAFE_DURATION elapsed
         setTimeout(() => {
           if (completed) {
             done();

@@ -82,12 +82,12 @@ export default class HighResTimeout extends EventEmitter {
   /**
    * Don't use the static _addInstance() or _removeInstance() directly.
    * Instead, use start() and stop() on timeout instances
-   * @param timer
+   * @param timeout
    * @returns {HighResTimeout}
    * @private
    */
-  static _removeInstance (timer) {
-    this._instances.delete(timer);
+  static _removeInstance (timeout) {
+    this._instances.delete(timeout);
 
     if (!this._instances.size) {
       this.stopPolling();
@@ -100,12 +100,12 @@ export default class HighResTimeout extends EventEmitter {
    * Adds a instance to the registry that is checked in each iteration of the
    * requestAnimationFrame() loop.
    *
-   * @param timer
+   * @param timeout
    * @returns {HighResTimeout}
    * @private
    */
-  static _addInstance (timer) {
-    this._instances.add(timer);
+  static _addInstance (timeout) {
+    this._instances.add(timeout);
 
     return this;
   }
@@ -169,7 +169,7 @@ export default class HighResTimeout extends EventEmitter {
     this._duration = duration;
     this.repeat    = repeat;
 
-    // If the timer is interrupted before completing, delay will be the amount left to wait
+    // If the timeout is interrupted before completing, delay will be the amount left to wait
     this._delay = duration;
 
     this._running = false;
@@ -191,7 +191,7 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Trigger the timer ahead of time, or at any time for that matter. Calling this will
+   * Trigger the timeout ahead of time, or at any time for that matter. Calling this will
    * fulfill the promise, so any handlers attached via then() will be triggered.
    *
    * @returns {HighResTimeout}
