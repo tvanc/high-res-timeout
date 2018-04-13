@@ -6,7 +6,7 @@ import EventEmitter                                              from 'events';
 /**
  *
  */
-export default class Timer extends EventEmitter {
+export default class HighResTimeout extends EventEmitter {
   // @formatter:off
   static get EVENT_TICK () { return 'tick'; }
   static get EVENT_STOP () { return 'stop'; }
@@ -17,7 +17,7 @@ export default class Timer extends EventEmitter {
 
   /**
    * All instances HighResTimeout
-   * @type {Set<Timer>}
+   * @type {Set<HighResTimeout>}
    * @private
    */
   static _instances = new Set();
@@ -28,7 +28,7 @@ export default class Timer extends EventEmitter {
    *
    * Calling this twice will have no effect.
    *
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    * @private
    */
   static startPolling () {
@@ -64,16 +64,16 @@ export default class Timer extends EventEmitter {
    * Stop the requestAnimationFrame() polling loop.
    *
    * @param pauseTimeouts
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    */
   static stopPolling (pauseTimeouts = true) {
     cancelAnimationFrame(this._nextFrameId);
     this._nextFrameId = undefined;
 
     if (pauseTimeouts) {
-      for (const instance of this._instances) {
+      this._instances.forEach((instance) => {
         instance.stop();
-      }
+      });
     }
 
     return this;
@@ -81,9 +81,9 @@ export default class Timer extends EventEmitter {
 
   /**
    * Don't use the static _addInstance() or _removeInstance() directly.
-   * Instead, use start() and stop() on Timer instances
+   * Instead, use start() and stop() on timeout instances
    * @param timer
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    * @private
    */
   static _removeInstance (timer) {
@@ -101,7 +101,7 @@ export default class Timer extends EventEmitter {
    * requestAnimationFrame() loop.
    *
    * @param timer
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    * @private
    */
   static _addInstance (timer) {
@@ -194,7 +194,7 @@ export default class Timer extends EventEmitter {
    * Trigger the timer ahead of time, or at any time for that matter. Calling this will
    * fulfill the promise, so any handlers attached via then() will be triggered.
    *
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    */
   complete () {
     this._running = false;
@@ -218,7 +218,7 @@ export default class Timer extends EventEmitter {
    *
    * To also reset the timeout, call stop() and then call reset()
    * <code>timeout.stop().reset();</code>
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    */
   stop () {
     if (!this._running) {
@@ -239,7 +239,7 @@ export default class Timer extends EventEmitter {
 
   /**
    * Start this timeout. Calling this method will result in the `start` event being triggered.
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    */
   start () {
     if (this._running) {
@@ -264,7 +264,7 @@ export default class Timer extends EventEmitter {
    * Reset the timeout. If the timeout is running, which is to say the timeout has been
    * started and has not completed or been stopped, then the timeout will continue running.
    * If the timeout is not currently running, the timeout will continue to not be running.
-   * @returns {Timer}
+   * @returns {HighResTimeout}
    */
   reset () {
     const timestamp = performanceDotNow();
