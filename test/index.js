@@ -1,76 +1,76 @@
-import Timer from '../src/index.js';
-import chai  from 'chai';
+import Timeout from '../src/index.js';
+import chai    from 'chai';
 
-describe('Timer', () => {
+describe('HighResTimeout', () => {
   const TIMER_DURATION = 25;
 
   const assert = chai.assert;
 
-  let timer;
+  let testInstance;
 
   beforeEach(() => {
-    timer = new Timer(TIMER_DURATION);
+    testInstance = new Timeout(TIMER_DURATION);
   });
 
   afterEach(() => {
-    timer.then().catch(() => {});
+    testInstance.then().catch(() => {});
 
-    timer.stop();
-    Timer.stopPolling();
+    testInstance.stop();
+    Timeout.stopPolling();
   });
 
   describe('Promises', () => {
     it('complete() fulfills', () => {
-      return timer.start();
+      return testInstance.start();
     });
 
-    it('stop() rejects', (done) => {
-      timer.then().catch(done);
+    it('pause() rejects', (done) => {
+      testInstance.then().catch(done);
 
-      timer.start().stop();
+      testInstance.start().stop();
     });
   });
 
   describe('Events', () => {
-    it(Timer.EVENT_START, (done) => {
-      timer
-        .on(Timer.EVENT_START, done)
+    it(Timeout.EVENT_START, (done) => {
+      testInstance
+        .on(Timeout.EVENT_START, done)
         .start()
         .start();
     });
 
-    it(Timer.EVENT_STOP, (done) => {
-      timer.then().catch(() => {});
+    it(Timeout.EVENT_STOP, (done) => {
+      testInstance.then().catch(() => {});
 
-      timer
-        .on(Timer.EVENT_STOP, done)
+      testInstance
+        .on(Timeout.EVENT_STOP, done)
         .start()
         .stop()
         .stop();
     });
 
-    it(Timer.EVENT_COMPLETE, (done) => {
-      timer
-        .on(Timer.EVENT_COMPLETE, () => {done();})
+    it(Timeout.EVENT_COMPLETE, (done) => {
+      testInstance
+        .on(Timeout.EVENT_COMPLETE, done)
         .start();
     });
 
-    it(Timer.EVENT_RESET, (done) => {
-      timer.then().catch(() => {});
+    it(Timeout.EVENT_RESET, (done) => {
+      testInstance.then().catch(() => {});
 
-      timer.on(Timer.EVENT_RESET, () => {done();})
+      testInstance.on(Timeout.EVENT_RESET, done)
         .start()
         .reset()
         .stop();
     });
 
-    it(Timer.EVENT_TICK, (done) => {
-      timer.then().catch(() => {});
+    it(Timeout.EVENT_TICK, (done) => {
+      testInstance.then().catch(() => {});
 
-      timer
-        .on(Timer.EVENT_TICK, () => {
-        timer.stop();
-        assert.equal(Timer._instances.has(timer), false);
+      testInstance
+        .on(Timeout.EVENT_TICK, () => {
+        testInstance.stop();
+        assert.equal(Timeout._instances.has(testInstance), false);
         done();
       })
         .start();
@@ -82,12 +82,12 @@ describe('Timer', () => {
     let timesCompleted = 0;
 
     it('Repeats', (done) => {
-      timer.repeat = true;
+      testInstance.repeat = true;
 
-      timer
-        .on(Timer.EVENT_COMPLETE, () => {
+      testInstance
+        .on(Timeout.EVENT_COMPLETE, () => {
           if (timesCompleted > 1) {
-            timer.repeat = false;
+            testInstance.repeat = false;
             done();
           }
 
@@ -99,67 +99,85 @@ describe('Timer', () => {
 
 
   describe('Properties', () => {
-    it('running', () => {
-      timer.then().catch(() => {});
+    describe('Static', () => {
+      it('polling', () => {
+        testInstance.then().catch(() => {});
 
-      // `running` should be boolean and false
-      assert.typeOf(timer.running, 'boolean');
-      assert.equal(timer.running, false);
+        assert.strictEqual(Timeout.polling, false, 'No running timeout, so no polling');
 
-      // `running` should be boolean and true
-      timer.start();
-      assert.typeOf(timer.running, 'boolean');
-      assert.equal(timer.running, true);
+        testInstance.start();
+        assert.strictEqual(Timeout.polling, true, 'Starting a timeout starts the polling loop');
 
-      // `running` should be boolean and false again
-      timer.stop();
-      assert.typeOf(timer.running, 'boolean');
-      assert.equal(timer.running, false);
+        testInstance.start();
+        Timeout.stopPolling();
+        assert.strictEqual(Timeout.polling, false, 'stopPolling() stops polling');
+
+        testInstance.stop();
+        assert.strictEqual(Timeout.polling, false, 'Stopping the only timeout stops polling');
+      });
     });
 
-    it('progress', (done) => {
-      const HALFWAY = 0.5;
+    describe('Instance', () => {
+      it('running', () => {
+        testInstance.then().catch(() => {});
 
-      timer.start().then().catch(() => {});
+        assert.strictEqual(testInstance.running, false, 'Not running before calling start()');
 
-      setTimeout(() => {
-        assert.typeOf(timer.progress, 'number');
-        assert.isAtLeast(timer.progress, HALFWAY);
+        testInstance.start();
+        assert.strictEqual(testInstance.running, true, 'Running after calling start()');
 
-        done();
-      }, TIMER_DURATION / 2);
-    });
+        testInstance.stop();
+        assert.strictEqual(testInstance.running, false, 'Not running after calling stop()');
 
-    it('duration', (done) => {
-      const SAFE_DURATION           = 100,
-            HALF_DURATION           = SAFE_DURATION / 2,
-            THREE_QUARTERS_DURATION = SAFE_DURATION * 0.75;
-
-      let completed = false;
-
-      // `duration` should be a number equal to TIMER_DURATION
-      assert.typeOf(timer.duration, 'number');
-      assert.equal(timer.duration, TIMER_DURATION);
-
-      // `duration` should be a number equal to SAFE_DURATION
-      timer.duration = SAFE_DURATION;
-      assert.typeOf(timer.duration, 'number');
-      assert.equal(timer.duration, SAFE_DURATION);
-
-      // Setting `duration` to at least the time already elapsed should trigger `complete`
-      timer.start().then(() => {
-        completed = true;
+        testInstance.start();
+        Timeout.stopPolling();
+        assert.strictEqual(testInstance.running, false, 'stopPolling() pauses timeouts');
       });
 
-      // Halfway through the expected time, change `duration`
-      setTimeout(() => {timer.duration = HALF_DURATION;}, HALF_DURATION);
+      it('progress', (done) => {
+        const HALFWAY = 0.5;
 
-      // Check that timer completed before the original `duration` of SAFE_DURATION elapsed
-      setTimeout(() => {
-        if (completed) {
+        testInstance.start().then().catch(() => {});
+
+        setTimeout(() => {
+          assert.typeOf(testInstance.progress, 'number');
+          assert.isAtLeast(testInstance.progress, HALFWAY);
+
           done();
-        }
-      }, THREE_QUARTERS_DURATION);
+        }, TIMER_DURATION / 2);
+      });
+
+      it('duration', (done) => {
+        const SAFE_DURATION           = 100,
+              HALF_DURATION           = SAFE_DURATION / 2,
+              THREE_QUARTERS_DURATION = SAFE_DURATION * 0.75;
+
+        let completed = false;
+
+        // `duration` should be a number equal to TIMER_DURATION
+        assert.typeOf(testInstance.duration, 'number');
+        assert.equal(testInstance.duration, TIMER_DURATION);
+
+        // `duration` should be a number equal to SAFE_DURATION
+        testInstance.duration = SAFE_DURATION;
+        assert.typeOf(testInstance.duration, 'number');
+        assert.equal(testInstance.duration, SAFE_DURATION);
+
+        // Setting `duration` to at least the time already elapsed should trigger `complete`
+        testInstance.start().then(() => {
+          completed = true;
+        });
+
+        // Halfway through the expected time, change `duration`
+        setTimeout(() => {testInstance.duration = HALF_DURATION;}, HALF_DURATION);
+
+        // Check that timer completed before the original `duration` of SAFE_DURATION elapsed
+        setTimeout(() => {
+          if (completed) {
+            done();
+          }
+        }, THREE_QUARTERS_DURATION);
+      });
     });
   });
 });

@@ -61,12 +61,20 @@ export default class Timer extends EventEmitter {
   }
 
   /**
-   * Stop the requestAnimationFrame() loop.
+   * Stop the requestAnimationFrame() polling loop.
+   *
+   * @param pauseTimeouts
    * @returns {Timer}
    */
-  static stopPolling () {
+  static stopPolling (pauseTimeouts = true) {
     cancelAnimationFrame(this._nextFrameId);
     this._nextFrameId = undefined;
+
+    if (pauseTimeouts) {
+      for (const instance of this._instances) {
+        instance.stop();
+      }
+    }
 
     return this;
   }
@@ -102,13 +110,21 @@ export default class Timer extends EventEmitter {
     return this;
   }
 
+  /**
+   * Read-only property indicating whether the polling loop is running.
+   * @returns {boolean}
+   */
+  static get polling () {
+    return !!this._nextFrameId;
+  }
+
   get duration () {
     return this._duration;
   }
 
   /**
-   * A new duration will affect the current cycle, so this setter takes into account the time
-   * already elapsed during the current cycle.
+   * Sets timeout duration, with logic for taking into account the amount of time already elapsed
+   * in the current cycle.
    *
    * @param {Number} duration
    */
@@ -170,6 +186,7 @@ export default class Timer extends EventEmitter {
    * @returns {Promise}
    */
   then (...args) {
+    // eslint-disable-next-line prefer-spread
     return this._promise.then.apply(this._promise, args);
   }
 
@@ -189,7 +206,7 @@ export default class Timer extends EventEmitter {
   }
 
   /**
-   * Pause this timeout. Calling this method will cause the underlying Promise to be
+   * Stop the timeout. Calling this method will cause the underlying Promise to be
    * rejected, causing any rejection handlers to be triggered. If this is undesirable, use the
    * `complete` and `stop` events instead of the Promise model.
    *
@@ -208,7 +225,7 @@ export default class Timer extends EventEmitter {
       return this;
     }
 
-    Timer._removeInstance(this);
+    this.constructor._removeInstance(this);
 
     this._delay   = performanceDotNow() - this._startTime;
     this._running = false;

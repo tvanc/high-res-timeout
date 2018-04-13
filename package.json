@@ -1,7 +1,7 @@
 {
-  "name": "timer",
+  "name": "high-res-timeout",
   "version": "1.0.0",
-  "description": "A high-res, advanced replacement for setTimeout() and setInterval(). Good for animations, long-press timers, carousels, you name it.",
+  "description": "A high-resolution, object-oriented replacement for setTimeout() and setInterval(). Good for animations, progress indicators, carousels, you name it.",
   "main": "dist/index.js",
   "watch": {
     "cover": [
@@ -23,22 +23,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/turibe/timer.js.git"
+    "url": "git@bitbucket.org:turibe/high-res-timeout.git"
   },
   "keywords": [
     "js",
+    "timeout",
     "javascript",
-    "timer",
     "setTimeout",
     "setInterval",
-    "",
     "performance.now",
     "DOMHighResTimeStamp",
     "requestAnimationFrame"
   ],
   "author": "Travis Uribe <travis@turibe.com> (http://turibe.com)",
   "license": "ISC",
-  "homepage": "https://bitbucket.org/turibe/timer.js#readme",
+  "homepage": "https://bitbucket.org/turibe/high-res-timeout",
   "dependencies": {
     "events": "^2.0.0",
     "performance-now": "^2.1.0",
