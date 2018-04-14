@@ -5,30 +5,24 @@ Good for animations, progress indicators, carousels, you name it.
 
 ## Simple timeouts
 ### As a Promise
-<pre>
-timeout.start().then(() => console.log('Hello world!'));
-</pre>
+    timeout.start().then(() => console.log('Hello world!'));
+
 ### Using events
-<pre>
-timeout.start().on('complete', () => console.log('Hello world'));
-</pre>
+    timeout.start().on('complete', () => console.log('Hello world'));
 
 ### Timeout with progress
-<pre>
-timeout.start().on('tick', () => {
-  const elm = document.getElementById('progress');
-  elm.innerHTML = (timeout.progress * 100).toFixed(0) + '%';
-});
-</pre>
+    timeout.start().on('tick', () => {
+      const elm = document.getElementById('progress');
+      elm.innerHTML = (timeout.progress * 100).toFixed(0) + '%';
+    });
 
 ## Development
-Use the following command to perform code coverage after each change
-<pre>
-npm run watch
-</pre>
+Use the following command to perform code coverage after each change.
+
+    npm run watch
 
 And use the following command to start Browsersync and refresh when the coverage
 reports change
-<pre>
-npm run serve
-</pre>
+
+    npm run serve
+
