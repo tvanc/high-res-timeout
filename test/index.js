@@ -2,21 +2,19 @@ import Timeout from '../src/index.js';
 import chai    from 'chai';
 
 describe('HighResTimeout', () => {
-  const TIMER_DURATION = 25;
+  const TIMEOUT_DURATION = 25;
 
   const assert = chai.assert;
 
   let testInstance;
 
   beforeEach(() => {
-    testInstance = new Timeout(TIMER_DURATION);
+    testInstance = new Timeout(TIMEOUT_DURATION);
+    testInstance.then().catch(() => {});
   });
 
   afterEach(() => {
-    testInstance.then().catch(() => {});
-
     testInstance.stop();
-    Timeout.stopPolling();
   });
 
   describe('Promises', () => {
@@ -24,7 +22,7 @@ describe('HighResTimeout', () => {
       return testInstance.start();
     });
 
-    it('pause() rejects', (done) => {
+    it('stop() rejects', (done) => {
       testInstance.then().catch(done);
 
       testInstance.start().stop();
@@ -33,25 +31,39 @@ describe('HighResTimeout', () => {
 
   describe('Events', () => {
     it(Timeout.EVENT_START, (done) => {
+      let secondInstance = new Timeout(TIMEOUT_DURATION);
+
       testInstance
-        .on(Timeout.EVENT_START, done)
-        .start()
+        .on(Timeout.EVENT_START, () => {
+          done();
+        })
         .start();
+
+      // `start` should only fire on the instance it was assigned to
+      secondInstance.then().catch(() => {});
+      secondInstance.start().stop();
+
+      // Calling start() twice should only trigger `start` event once
+      testInstance.start();
+      testInstance.stop();
     });
 
     it(Timeout.EVENT_STOP, (done) => {
-      testInstance.then().catch(() => {});
-
       testInstance
         .on(Timeout.EVENT_STOP, done)
         .start()
-        .stop()
         .stop();
+
+      // Calling stop() twice should only trigger `stop` event once
+      testInstance.stop();
     });
 
     it(Timeout.EVENT_COMPLETE, (done) => {
       testInstance
-        .on(Timeout.EVENT_COMPLETE, done)
+        .on(Timeout.EVENT_COMPLETE, () => {
+          testInstance.stop();
+          done();
+        })
         .start();
     });
 
@@ -69,29 +81,8 @@ describe('HighResTimeout', () => {
 
       testInstance
         .on(Timeout.EVENT_TICK, () => {
-        testInstance.stop();
-        assert.equal(Timeout._instances.has(testInstance), false);
-        done();
-      })
-        .start();
-    });
-  });
-
-
-  describe('Repetition', () => {
-    let timesCompleted = 0;
-
-    it('Repeats', (done) => {
-      testInstance.repeat = true;
-
-      testInstance
-        .on(Timeout.EVENT_COMPLETE, () => {
-          if (timesCompleted > 1) {
-            testInstance.repeat = false;
-            done();
-          }
-
-          timesCompleted += 1;
+          testInstance.stop();
+          done();
         })
         .start();
     });
@@ -101,16 +92,10 @@ describe('HighResTimeout', () => {
   describe('Properties', () => {
     describe('Static', () => {
       it('polling', () => {
-        testInstance.then().catch(() => {});
-
         assert.strictEqual(Timeout.polling, false, 'No running timeout, so no polling');
 
         testInstance.start();
         assert.strictEqual(Timeout.polling, true, 'Starting a timeout starts the polling loop');
-
-        testInstance.start();
-        Timeout.stopPolling();
-        assert.strictEqual(Timeout.polling, false, 'stopPolling() stops polling');
 
         testInstance.stop();
         assert.strictEqual(Timeout.polling, false, 'Stopping the only timeout stops polling');
@@ -118,6 +103,23 @@ describe('HighResTimeout', () => {
     });
 
     describe('Instance', () => {
+      let timesCompleted = 0;
+
+      it('repeat', (done) => {
+        testInstance.repeat = true;
+
+        testInstance
+          .on(Timeout.EVENT_COMPLETE, () => {
+            if (timesCompleted > 1) {
+              testInstance.repeat = false;
+              done();
+            }
+
+            timesCompleted += 1;
+          })
+          .start();
+      });
+
       it('running', () => {
         testInstance.then().catch(() => {});
 
@@ -128,10 +130,6 @@ describe('HighResTimeout', () => {
 
         testInstance.stop();
         assert.strictEqual(testInstance.running, false, 'Not running after calling stop()');
-
-        testInstance.start();
-        Timeout.stopPolling();
-        assert.strictEqual(testInstance.running, false, 'stopPolling() pauses timeouts');
       });
 
       it('progress', (done) => {
@@ -144,7 +142,7 @@ describe('HighResTimeout', () => {
           assert.isAtLeast(testInstance.progress, HALFWAY);
 
           done();
-        }, TIMER_DURATION / 2);
+        }, TIMEOUT_DURATION / 2);
       });
 
       it('duration', (done) => {
@@ -156,7 +154,7 @@ describe('HighResTimeout', () => {
 
         // `duration` should be a number equal to TIMER_DURATION
         assert.typeOf(testInstance.duration, 'number');
-        assert.equal(testInstance.duration, TIMER_DURATION);
+        assert.equal(testInstance.duration, TIMEOUT_DURATION);
 
         // `duration` should be a number equal to SAFE_DURATION
         testInstance.duration = SAFE_DURATION;

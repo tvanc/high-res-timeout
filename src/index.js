@@ -31,12 +31,14 @@ export default class HighResTimeout extends EventEmitter {
    * @returns {HighResTimeout}
    * @private
    */
-  static startPolling () {
+  static _startPolling () {
     if (this._nextFrameId) {
       return this;
     }
 
     const poll = (timestamp) => {
+      this._nextFrameId = requestAnimationFrame(poll);
+
       this._instances.forEach((instance) => {
         instance._tick(timestamp);
 
@@ -51,8 +53,6 @@ export default class HighResTimeout extends EventEmitter {
           }
         }
       });
-
-      this._nextFrameId = requestAnimationFrame(poll);
     };
 
     poll(performanceDotNow());
@@ -62,19 +62,13 @@ export default class HighResTimeout extends EventEmitter {
 
   /**
    * Stop the requestAnimationFrame() polling loop.
+   * @private
    *
-   * @param pauseTimeouts
    * @returns {HighResTimeout}
    */
-  static stopPolling (pauseTimeouts = true) {
+  static _stopPolling () {
     cancelAnimationFrame(this._nextFrameId);
     this._nextFrameId = undefined;
-
-    if (pauseTimeouts) {
-      this._instances.forEach((instance) => {
-        instance.stop();
-      });
-    }
 
     return this;
   }
@@ -90,7 +84,7 @@ export default class HighResTimeout extends EventEmitter {
     this._instances.delete(timeout);
 
     if (!this._instances.size) {
-      this.stopPolling();
+      this._stopPolling();
     }
 
     return this;
@@ -225,9 +219,9 @@ export default class HighResTimeout extends EventEmitter {
       return this;
     }
 
+    this._delay   = performanceDotNow() - this._startTime;
     this.constructor._removeInstance(this);
 
-    this._delay   = performanceDotNow() - this._startTime;
     this._running = false;
 
     this._rejectPromise();
@@ -248,12 +242,10 @@ export default class HighResTimeout extends EventEmitter {
 
     this._startTime  = performanceDotNow();
     this._targetTime = this._startTime + this._delay;
+    this._running    = true;
 
     this.constructor._addInstance(this);
-
-    this._running = true;
-
-    this.constructor.startPolling();
+    this.constructor._startPolling();
 
     this.emit(this.constructor.EVENT_START);
 
