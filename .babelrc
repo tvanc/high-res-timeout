@@ -12,8 +12,7 @@
     },
     "production": {
       "presets": [
-        "env",
-        "minify"
+        "env"
       ],
       "plugins": [
         "add-module-exports",
