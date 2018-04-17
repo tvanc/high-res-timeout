@@ -42,14 +42,18 @@ export default class HighResTimeout extends EventEmitter {
       this._instances.forEach((instance) => {
         instance._tick(timestamp);
 
-        if (timestamp > instance._targetTime) {
+        // `tick` handler may have called stop()
+        if (this._instances.has(instance) && timestamp > instance._targetTime) {
           instance.complete();
 
-          if (instance.repeat) {
-            instance.reset();
-          }
-          else {
-            this._removeInstance(instance);
+          // `complete` handler may have called stop()
+          if (this._instances.has(instance)) {
+            if (instance.repeat) {
+              instance.reset().start();
+            }
+            else {
+              this._removeInstance(instance);
+            }
           }
         }
       });
@@ -140,7 +144,11 @@ export default class HighResTimeout extends EventEmitter {
    * start() was called and when this instance will fulfill.
    */
   get progress () {
-    return Math.min((performanceDotNow() - this._startTime) / this._duration, 1);
+    if (this.running) {
+      return (performanceDotNow() - this._startTime) / this._duration;
+    }
+
+    return (this._duration - this._delay) / this._duration;
   }
 
   /**
@@ -218,8 +226,9 @@ export default class HighResTimeout extends EventEmitter {
     if (!this._running) {
       return this;
     }
+    const now = performanceDotNow();
 
-    this._delay   = performanceDotNow() - this._startTime;
+    this._delay = this._duration - (now - this._startTime);
     this.constructor._removeInstance(this);
 
     this._running = false;

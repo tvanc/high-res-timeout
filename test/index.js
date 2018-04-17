@@ -103,9 +103,8 @@ describe('HighResTimeout', () => {
     });
 
     describe('Instance', () => {
-      let timesCompleted = 0;
-
       it('repeat', (done) => {
+        let timesCompleted  = 0;
         testInstance.repeat = true;
 
         testInstance
@@ -132,17 +131,65 @@ describe('HighResTimeout', () => {
         assert.strictEqual(testInstance.running, false, 'Not running after calling stop()');
       });
 
-      it('progress', (done) => {
-        const HALFWAY = 0.5;
+      describe('progress', () => {
+        it('Correct before repeating', (done) => {
+          const HALFWAY = 0.5;
 
-        testInstance.start().then().catch(() => {});
+          testInstance.start().then().catch(() => {});
 
-        setTimeout(() => {
-          assert.typeOf(testInstance.progress, 'number');
-          assert.isAtLeast(testInstance.progress, HALFWAY);
+          setTimeout(() => {
+            assert.typeOf(testInstance.progress, 'number');
+            assert.isAtLeast(testInstance.progress, HALFWAY);
 
-          done();
-        }, TIMEOUT_DURATION / 2);
+            done();
+          }, TIMEOUT_DURATION / 2);
+        });
+
+        it('Correct after repeating', (done) => {
+          let timesCompleted = 0;
+
+          testInstance.repeat = true;
+
+          testInstance
+            .start()
+            .on(Timeout.EVENT_COMPLETE, () => {
+              timesCompleted += 1;
+
+              if (timesCompleted > 1) {
+                testInstance.on(Timeout.EVENT_TICK, () => {
+                  assert.isBelow(
+                    testInstance.progress,
+                    1,
+                    'Progress after complete is less than 1',
+                  );
+
+                  testInstance.stop();
+
+                  done();
+                });
+              }
+            });
+        });
+
+        it('Correct while stopped', (done) => {
+          let firstProgress;
+
+          testInstance.start().stop();
+
+          firstProgress = testInstance.progress;
+
+          setTimeout(() => {
+            assert.strictEqual(
+              testInstance.progress,
+              firstProgress,
+              'Progress does not increase while stopped',
+            );
+
+            assert.isBelow(testInstance.progress, 0.01, 'Progress is nearly zero');
+
+            done();
+          }, TIMEOUT_DURATION);
+        });
       });
 
       it('duration', (done) => {
