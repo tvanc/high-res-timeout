@@ -39,7 +39,7 @@ timeout.start()
     .on('reset', () => console.log("I've been reset!"))
     .on('tick', () => {
     	console.log(`I'm ${(timeout.progress * 100).toFixed(0))}% done`)
-    };
+    });
 ```
 
 ## Development
