@@ -26,14 +26,14 @@ const interval = new HighResTimeout(250, true);
 ### As a Promise
 ```javascript
 timeout.start()
-	.then(() => console.log('I am complete!'))
+    .then(() => console.log('I am complete!'))
     .catch(() => console.log("I've been stopped!"));
 ```
 
 ### Using events
 ```javascript
 timeout.start()
-	.on('complete', () => console.log('I am complete!'))
+    .on('complete', () => console.log('I am complete!'))
     .on('stop', () => console.log("I've stopped!"))
     .on('start', () => console.log("I've started!"))
     .on('reset', () => console.log("I've been reset!"))
