@@ -2,7 +2,7 @@
   "env": {
     "development": {
       "presets": [
-        "env"
+        "env", "minify"
       ],
       "plugins": [
         "add-module-exports",
@@ -12,7 +12,22 @@
     },
     "production": {
       "presets": [
-        "env"
+        [
+          "env",
+          {
+            "modules": false,
+            "useBuiltIns": true,
+            "targets": {
+              "browsers": [
+                "Chrome >= 60",
+                "Safari >= 10.1",
+                "iOS >= 10.3",
+                "Firefox >= 54",
+                "Edge >= 15"
+              ]
+            }
+          }
+        ]
       ],
       "plugins": [
         "add-module-exports",
