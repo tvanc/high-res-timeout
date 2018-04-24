@@ -1,39 +1,10 @@
 {
-  "env": {
-    "development": {
-      "presets": [
-        "env", "minify"
-      ],
-      "plugins": [
-        "add-module-exports",
-        "transform-class-properties",
-        "transform-decorators-legacy"
-      ]
-    },
-    "production": {
-      "presets": [
-        [
-          "env",
-          {
-            "modules": false,
-            "useBuiltIns": true,
-            "targets": {
-              "browsers": [
-                "Chrome >= 60",
-                "Safari >= 10.1",
-                "iOS >= 10.3",
-                "Firefox >= 54",
-                "Edge >= 15"
-              ]
-            }
-          }
-        ]
-      ],
-      "plugins": [
-        "add-module-exports",
-        "transform-class-properties",
-        "transform-decorators-legacy"
-      ]
-    }
-  }
+  "presets": [
+    "env"
+  ],
+  "plugins": [
+    "add-module-exports",
+    "transform-class-properties",
+    "transform-decorators-legacy"
+  ]
 }

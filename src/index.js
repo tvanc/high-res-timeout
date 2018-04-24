@@ -16,7 +16,8 @@ export default class HighResTimeout extends EventEmitter {
   // @formatter:on
 
   /**
-   * All instances HighResTimeout
+   * All instances of HighResTimeout
+   *
    * @type {Set<HighResTimeout>}
    * @private
    */
@@ -95,7 +96,7 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Adds a instance to the registry that is checked in each iteration of the
+   * Adds an instance to the registry, which is checked in each iteration of the
    * requestAnimationFrame() loop.
    *
    * @param timeout

@@ -1,6 +1,6 @@
 {
   "name": "high-res-timeout",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A high-resolution, object-oriented replacement for setTimeout() and setInterval(). Good for animations, progress indicators, carousels, you name it.",
   "main": "dist/index.js",
   "watch": {
@@ -24,6 +24,7 @@
   "repository": "github:truribe/high-res-timeout",
   "keywords": [
     "js",
+    "timer",
     "timeout",
     "javascript",
     "setTimeout",
