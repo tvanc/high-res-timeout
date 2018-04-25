@@ -2,7 +2,7 @@ import Timeout from '../src/index.js';
 import chai    from 'chai';
 
 describe('HighResTimeout', () => {
-  const TIMEOUT_DURATION = 25;
+  const TIMEOUT_DURATION = 50;
 
   const assert = chai.assert;
 
@@ -34,9 +34,7 @@ describe('HighResTimeout', () => {
       let secondInstance = new Timeout(TIMEOUT_DURATION);
 
       testInstance
-        .on(Timeout.EVENT_START, () => {
-          done();
-        })
+        .on(Timeout.EVENT_START, done)
         .start();
 
       // `start` should only fire on the instance it was assigned to
@@ -68,8 +66,6 @@ describe('HighResTimeout', () => {
     });
 
     it(Timeout.EVENT_RESET, (done) => {
-      testInstance.then().catch(() => {});
-
       testInstance.on(Timeout.EVENT_RESET, done)
         .start()
         .reset()
@@ -77,8 +73,6 @@ describe('HighResTimeout', () => {
     });
 
     it(Timeout.EVENT_TICK, (done) => {
-      testInstance.then().catch(() => {});
-
       testInstance
         .on(Timeout.EVENT_TICK, () => {
           testInstance.stop();
@@ -108,6 +102,7 @@ describe('HighResTimeout', () => {
         testInstance.repeat = true;
 
         testInstance
+          .start()
           .on(Timeout.EVENT_COMPLETE, () => {
             if (timesCompleted > 1) {
               testInstance.repeat = false;
@@ -115,13 +110,10 @@ describe('HighResTimeout', () => {
             }
 
             timesCompleted += 1;
-          })
-          .start();
+          });
       });
 
       it('running', () => {
-        testInstance.then().catch(() => {});
-
         assert.strictEqual(testInstance.running, false, 'Not running before calling start()');
 
         testInstance.start();
@@ -132,43 +124,42 @@ describe('HighResTimeout', () => {
       });
 
       describe('progress', () => {
-        it('Correct before repeating', (done) => {
-          const HALFWAY = 0.5;
+        it('Before repeating', (done) => {
+          const MAX_FUZZINESS = 0.1,
+                HALFWAY       = 0.5,
+                TARGET_MIN    = HALFWAY - MAX_FUZZINESS;
 
-          testInstance.start().then().catch(() => {});
+          testInstance.start();
 
           setTimeout(() => {
-            assert.typeOf(testInstance.progress, 'number');
-            assert.isAtLeast(testInstance.progress, HALFWAY);
+            const progress = testInstance.progress;
+
+            assert.typeOf(progress, 'number', 'Progress must be a number');
+            assert.isAtLeast(progress, TARGET_MIN);
 
             done();
           }, TIMEOUT_DURATION / 2);
         });
 
-        it('Correct after repeating', (done) => {
-          let timesCompleted = 0;
-
+        it('With repeat = true', (done) => {
           testInstance.repeat = true;
 
           testInstance
-            .start()
             .on(Timeout.EVENT_COMPLETE, () => {
-              timesCompleted += 1;
+              // Test progress on fist `tick` after `complete`
+              testInstance.on(Timeout.EVENT_TICK, () => {
+                assert.isBelow(
+                  testInstance.progress,
+                  1,
+                  'Progress on first tick after `complete` is less than 1',
+                );
 
-              if (timesCompleted > 1) {
-                testInstance.on(Timeout.EVENT_TICK, () => {
-                  assert.isBelow(
-                    testInstance.progress,
-                    1,
-                    'Progress after complete is less than 1',
-                  );
 
-                  testInstance.stop();
-
-                  done();
-                });
-              }
+                done();
+              });
             });
+
+          testInstance.start();
         });
 
         it('Correct while stopped', (done) => {

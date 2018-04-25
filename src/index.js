@@ -24,7 +24,7 @@ export default class HighResTimeout extends EventEmitter {
   static _instances = new Set();
 
   /**
-   * Starts a requestAnimationFrame() loop which polls the registry for completed timeouts.
+   * Starts polling _instances for completed timeouts via a requestAnimationFrame() loop.
    * Completed timeouts resolve their promises and emit a 'complete' event.
    *
    * Calling this twice will have no effect.
@@ -37,24 +37,20 @@ export default class HighResTimeout extends EventEmitter {
       return this;
     }
 
-    const poll = (timestamp) => {
+    const poll = (pollingTimestamp) => {
+      this._tickTimestamp = pollingTimestamp;
       this._nextFrameId = requestAnimationFrame(poll);
 
       this._instances.forEach((instance) => {
-        instance._tick(timestamp);
+        instance.emit(this.EVENT_TICK);
 
         // `tick` handler may have called stop()
-        if (this._instances.has(instance) && timestamp > instance._targetTime) {
+        if (instance._running && pollingTimestamp >= instance._targetTime) {
+          // complete() will restart if necessary
           instance.complete();
 
-          // `complete` handler may have called stop()
-          if (this._instances.has(instance)) {
-            if (instance.repeat) {
-              instance.reset().start();
-            }
-            else {
-              this._removeInstance(instance);
-            }
+          if (!instance._running) {
+            this._removeInstance(instance);
           }
         }
       });
@@ -66,7 +62,7 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Stop the requestAnimationFrame() polling loop.
+   * Stop the polling loop.
    * @private
    *
    * @returns {HighResTimeout}
@@ -81,12 +77,15 @@ export default class HighResTimeout extends EventEmitter {
   /**
    * Don't use the static _addInstance() or _removeInstance() directly.
    * Instead, use start() and stop() on timeout instances
-   * @param timeout
+   *
+   * @param instance
+   * The timeout instance to be removed.
+   *
    * @returns {HighResTimeout}
    * @private
    */
-  static _removeInstance (timeout) {
-    this._instances.delete(timeout);
+  static _removeInstance (instance) {
+    this._instances.delete(instance);
 
     if (!this._instances.size) {
       this._stopPolling();
@@ -96,8 +95,7 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Adds an instance to the registry, which is checked in each iteration of the
-   * requestAnimationFrame() loop.
+   * Adds an instance to the polling set.
    *
    * @param timeout
    * @returns {HighResTimeout}
@@ -107,6 +105,10 @@ export default class HighResTimeout extends EventEmitter {
     this._instances.add(timeout);
 
     return this;
+  }
+
+  static get tickTimestamp () {
+    return this._tickTimestamp;
   }
 
   /**
@@ -142,11 +144,13 @@ export default class HighResTimeout extends EventEmitter {
   /**
    * @returns {number}
    * A float between 0 and 1 indicating how much of the total time has elapsed between when
-   * start() was called and when this instance will fulfill.
+   * start() was called and when this instance will fulfill. This number changes with each tick.
+   *
+   * If you get exactly 1 then the timeout will complete during the current tick.
    */
   get progress () {
-    if (this.running) {
-      return (performanceDotNow() - this._startTime) / this._duration;
+    if (this._running) {
+      return Math.min((HighResTimeout._tickTimestamp - this._startTime) / this._duration, 1);
     }
 
     return (this._duration - this._delay) / this._duration;
@@ -184,26 +188,21 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Treat instances of HighResTimeout like a Promise.
-   * @param args
-   * @returns {Promise}
-   */
-  then (...args) {
-    // eslint-disable-next-line prefer-spread
-    return this._promise.then.apply(this._promise, args);
-  }
-
-  /**
    * Trigger the timeout ahead of time, or at any time for that matter. Calling this will
    * fulfill the promise, so any handlers attached via then() will be triggered.
    *
    * @returns {HighResTimeout}
    */
   complete () {
-    this._running = false;
+    this._running = this.repeat;
     this._resolvePromise();
 
     this.emit(this.constructor.EVENT_COMPLETE);
+
+    // `complete` handler may have called stop()
+    if (this.repeat && this._running) {
+      this._restart();
+    }
 
     return this;
   }
@@ -243,6 +242,7 @@ export default class HighResTimeout extends EventEmitter {
 
   /**
    * Start this timeout. Calling this method will result in the `start` event being triggered.
+   *
    * @returns {HighResTimeout}
    */
   start () {
@@ -263,9 +263,8 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Reset the timeout. If the timeout is running, which is to say the timeout has been
-   * started and has not completed or been stopped, then the timeout will continue running.
-   * If the timeout is not currently running, the timeout will continue to not be running.
+   * Reset the timeout. This method neither starts nor stops the timeout.
+   *
    * @returns {HighResTimeout}
    */
   reset () {
@@ -284,13 +283,31 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Triggers the tick event. This indicates that a cycle of the requestAnimationFrame() loop
-   * is about to complete. Note that, as long as the timeout completes organically
-   * (as in, by waiting and not manually calling complete()), the `tick` event will always fire
-   * before `complete`.
+   * Treat instances of HighResTimeout like a Promise.
+   * @param args
+   * @returns {Promise}
+   */
+  then (...args) {
+    // eslint-disable-next-line prefer-spread
+    return this._promise.then.apply(this._promise, args);
+  }
+
+  /**
+   * Restarts the timeout. This method is much like reset() with start() tacked on,
+   * with some key differences to make it more suitable for implementing repetition:
+   * - Works around "drift" introduced during polling.
+   * - Does not emit `reset` or `start` events.
+   *
    * @private
    */
-  _tick () {
-    this.emit(this.constructor.EVENT_TICK);
+  _restart () {
+    this._startTime = this._targetTime;
+    this._targetTime = this._startTime + this._duration;
+    this._delay = this._duration;
+
+    this._running = true;
+
+    this.constructor._addInstance(this);
+    this.constructor._startPolling();
   }
 }
