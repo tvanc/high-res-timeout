@@ -107,10 +107,6 @@ export default class HighResTimeout extends EventEmitter {
     return this;
   }
 
-  static get tickTimestamp () {
-    return this._tickTimestamp;
-  }
-
   /**
    * Read-only property indicating whether the polling loop is running.
    * @returns {boolean}
@@ -124,7 +120,7 @@ export default class HighResTimeout extends EventEmitter {
   }
 
   /**
-   * Sets timeout duration, with logic for taking into account the amount of time already elapsed
+   * Sets timeout duration, taking into account the amount of time already elapsed
    * in the current cycle.
    *
    * @param {Number} duration
