@@ -14,7 +14,11 @@ describe("HighResTimeout", () => {
     testInstance.then().catch(() => {})
   })
 
-  afterEach(() => testInstance.stop())
+  afterEach(() => {
+    if (testInstance.running) {
+      testInstance.stop()
+    }
+  })
 
   describe("Promises", () => {
     it("complete() fulfills", () => {
