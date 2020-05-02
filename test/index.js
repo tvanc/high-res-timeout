@@ -1,10 +1,11 @@
 import Timeout from '../src/index.js';
 import chai    from 'chai';
+import { describe, it, beforeEach, afterEach } from 'mocha'
 
 describe('HighResTimeout', () => {
-  const TIMEOUT_DURATION = 50;
-
+  // noinspection JSUnresolvedVariable
   const assert = chai.assert;
+  const TIMEOUT_DURATION = 50;
 
   let testInstance;
 
