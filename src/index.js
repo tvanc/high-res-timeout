@@ -1,19 +1,22 @@
-import requestAnimationFrame, { cancel as cancelAnimationFrame } from 'raf';
-import performanceDotNow                                         from 'performance-now';
-import EventEmitter                                              from 'events';
+import requestAnimationFrame, { cancel as cancelAnimationFrame } from "raf"
+import performanceDotNow from "performance-now"
+import EventEmitter from "events"
 
-
-/**
- *
- */
 export default class HighResTimeout extends EventEmitter {
-  // @formatter:off
-  static get EVENT_TICK () { return 'tick'; }
-  static get EVENT_STOP () { return 'stop'; }
-  static get EVENT_START () { return 'start'; }
-  static get EVENT_RESET () { return 'reset'; }
-  static get EVENT_COMPLETE () { return 'complete'; }
-  // @formatter:on
+  // prettier-ignore
+  static get EVENT_TICK () { return 'tick' }
+
+  // prettier-ignore
+  static get EVENT_STOP () { return 'stop' }
+
+  // prettier-ignore
+  static get EVENT_START () { return 'start' }
+
+  // prettier-ignore
+  static get EVENT_RESET () { return 'reset' }
+
+  // prettier-ignore
+  static get EVENT_COMPLETE () { return 'complete' }
 
   /**
    * All instances of HighResTimeout
@@ -21,7 +24,7 @@ export default class HighResTimeout extends EventEmitter {
    * @type {Set<HighResTimeout>}
    * @private
    */
-  static _instances = new Set();
+  static _instances = new Set()
 
   /**
    * Starts polling _instances for completed timeouts via a requestAnimationFrame() loop.
@@ -32,33 +35,33 @@ export default class HighResTimeout extends EventEmitter {
    * @returns {HighResTimeout}
    * @private
    */
-  static _startPolling () {
+  static _startPolling() {
     if (this._nextFrameId) {
-      return this;
+      return this
     }
 
     const poll = (pollingTimestamp) => {
-      this._tickTimestamp = pollingTimestamp;
-      this._nextFrameId = requestAnimationFrame(poll);
+      this._tickTimestamp = pollingTimestamp
+      this._nextFrameId = requestAnimationFrame(poll)
 
       this._instances.forEach((instance) => {
-        instance.emit(this.EVENT_TICK);
+        instance.emit(this.EVENT_TICK)
 
         // `tick` handler may have called stop()
         if (instance._running && pollingTimestamp >= instance._targetTime) {
           // complete() will restart if necessary
-          instance.complete();
+          instance.complete()
 
           if (!instance._running) {
-            this._removeInstance(instance);
+            this._removeInstance(instance)
           }
         }
-      });
-    };
+      })
+    }
 
-    poll(performanceDotNow());
+    poll(performanceDotNow())
 
-    return this;
+    return this
   }
 
   /**
@@ -67,11 +70,11 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @returns {HighResTimeout}
    */
-  static _stopPolling () {
-    cancelAnimationFrame(this._nextFrameId);
-    this._nextFrameId = undefined;
+  static _stopPolling() {
+    cancelAnimationFrame(this._nextFrameId)
+    this._nextFrameId = undefined
 
-    return this;
+    return this
   }
 
   /**
@@ -84,14 +87,14 @@ export default class HighResTimeout extends EventEmitter {
    * @returns {HighResTimeout}
    * @private
    */
-  static _removeInstance (instance) {
-    this._instances.delete(instance);
+  static _removeInstance(instance) {
+    this._instances.delete(instance)
 
     if (!this._instances.size) {
-      this._stopPolling();
+      this._stopPolling()
     }
 
-    return this;
+    return this
   }
 
   /**
@@ -101,22 +104,22 @@ export default class HighResTimeout extends EventEmitter {
    * @returns {HighResTimeout}
    * @private
    */
-  static _addInstance (timeout) {
-    this._instances.add(timeout);
+  static _addInstance(timeout) {
+    this._instances.add(timeout)
 
-    return this;
+    return this
   }
 
   /**
    * Read-only property indicating whether the polling loop is running.
    * @returns {boolean}
    */
-  static get polling () {
-    return !!this._nextFrameId;
+  static get polling() {
+    return !!this._nextFrameId
   }
 
-  get duration () {
-    return this._duration;
+  get duration() {
+    return this._duration
   }
 
   /**
@@ -125,15 +128,15 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @param {Number} duration
    */
-  set duration (duration) {
-    this._duration = duration;
-    this._delay    = duration;
+  set duration(duration) {
+    this._duration = duration
+    this._delay = duration
 
     if (this._running) {
-      const timestamp = performanceDotNow();
+      const timestamp = performanceDotNow()
 
-      this._delay      = duration - (timestamp - this._startTime);
-      this._targetTime = timestamp + this._delay;
+      this._delay = duration - (timestamp - this._startTime)
+      this._targetTime = timestamp + this._delay
     }
   }
 
@@ -144,20 +147,23 @@ export default class HighResTimeout extends EventEmitter {
    *
    * If you get exactly 1 then the timeout will complete during the current tick.
    */
-  get progress () {
+  get progress() {
     if (this._running) {
-      return Math.min((HighResTimeout._tickTimestamp - this._startTime) / this._duration, 1);
+      return Math.min(
+        (HighResTimeout._tickTimestamp - this._startTime) / this._duration,
+        1
+      )
     }
 
-    return (this._duration - this._delay) / this._duration;
+    return (this._duration - this._delay) / this._duration
   }
 
   /**
    * Read-only property for checking whether this HighResTimeout instance is currently running.
    * @returns {boolean}
    */
-  get running () {
-    return this._running;
+  get running() {
+    return this._running
   }
 
   /**
@@ -165,22 +171,22 @@ export default class HighResTimeout extends EventEmitter {
    * @param duration
    * @param repeat
    */
-  constructor (duration, repeat = false) {
-    super();
+  constructor(duration, repeat = false) {
+    super()
 
     // The total time to wait
-    this._duration = duration;
-    this.repeat    = repeat;
+    this._duration = duration
+    this.repeat = repeat
 
     // If the timeout is interrupted before completing, delay will be the amount left to wait
-    this._delay = duration;
+    this._delay = duration
 
-    this._running = false;
+    this._running = false
 
     this._promise = new Promise((resolve, reject) => {
-      this._resolvePromise = resolve;
-      this._rejectPromise  = reject;
-    });
+      this._resolvePromise = resolve
+      this._rejectPromise = reject
+    })
   }
 
   /**
@@ -189,18 +195,18 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @returns {HighResTimeout}
    */
-  complete () {
-    this._running = this.repeat;
-    this._resolvePromise();
+  complete() {
+    this._running = this.repeat
+    this._resolvePromise()
 
-    this.emit(this.constructor.EVENT_COMPLETE);
+    this.emit(this.constructor.EVENT_COMPLETE)
 
     // `complete` handler may have called stop()
     if (this.repeat && this._running) {
-      this._restart();
+      this._restart()
     }
 
-    return this;
+    return this
   }
 
   /**
@@ -218,22 +224,22 @@ export default class HighResTimeout extends EventEmitter {
    * <code>timeout.stop().reset();</code>
    * @returns {HighResTimeout}
    */
-  stop () {
+  stop() {
     if (!this._running) {
-      return this;
+      return this
     }
-    const now = performanceDotNow();
+    const now = performanceDotNow()
 
-    this._delay = this._duration - (now - this._startTime);
-    this.constructor._removeInstance(this);
+    this._delay = this._duration - (now - this._startTime)
+    this.constructor._removeInstance(this)
 
-    this._running = false;
+    this._running = false
 
-    this._rejectPromise();
+    this._rejectPromise()
 
-    this.emit(this.constructor.EVENT_STOP);
+    this.emit(this.constructor.EVENT_STOP)
 
-    return this;
+    return this
   }
 
   /**
@@ -241,21 +247,21 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @returns {HighResTimeout}
    */
-  start () {
+  start() {
     if (this._running) {
-      return this;
+      return this
     }
 
-    this._startTime  = performanceDotNow();
-    this._targetTime = this._startTime + this._delay;
-    this._running    = true;
+    this._startTime = performanceDotNow()
+    this._targetTime = this._startTime + this._delay
+    this._running = true
 
-    this.constructor._addInstance(this);
-    this.constructor._startPolling();
+    this.constructor._addInstance(this)
+    this.constructor._startPolling()
 
-    this.emit(this.constructor.EVENT_START);
+    this.emit(this.constructor.EVENT_START)
 
-    return this;
+    return this
   }
 
   /**
@@ -263,19 +269,19 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @returns {HighResTimeout}
    */
-  reset () {
-    const timestamp = performanceDotNow();
+  reset() {
+    const timestamp = performanceDotNow()
 
-    this._delay      = this._duration;
-    this._targetTime = timestamp + this._duration;
+    this._delay = this._duration
+    this._targetTime = timestamp + this._duration
 
     if (this._running) {
-      this._startTime = timestamp;
+      this._startTime = timestamp
     }
 
-    this.emit(this.constructor.EVENT_RESET);
+    this.emit(this.constructor.EVENT_RESET)
 
-    return this;
+    return this
   }
 
   /**
@@ -283,9 +289,9 @@ export default class HighResTimeout extends EventEmitter {
    * @param args
    * @returns {Promise}
    */
-  then (...args) {
+  then(...args) {
     // eslint-disable-next-line prefer-spread
-    return this._promise.then.apply(this._promise, args);
+    return this._promise.then.apply(this._promise, args)
   }
 
   /**
@@ -296,14 +302,14 @@ export default class HighResTimeout extends EventEmitter {
    *
    * @private
    */
-  _restart () {
-    this._startTime = this._targetTime;
-    this._targetTime = this._startTime + this._duration;
-    this._delay = this._duration;
+  _restart() {
+    this._startTime = this._targetTime
+    this._targetTime = this._startTime + this._duration
+    this._delay = this._duration
 
-    this._running = true;
+    this._running = true
 
-    this.constructor._addInstance(this);
-    this.constructor._startPolling();
+    this.constructor._addInstance(this)
+    this.constructor._startPolling()
   }
 }
