@@ -141,7 +141,7 @@ describe("HighResTimeout", () => {
 
       describe("progress", () => {
         it("Before repeating", (done) => {
-          const MAX_FUZZINESS = 0.1,
+          const MAX_FUZZINESS = 0.15,
             HALFWAY = 0.5,
             TARGET_MIN = HALFWAY - MAX_FUZZINESS
 
